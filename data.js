@@ -1,4 +1,4 @@
-// data.js
+
 export const books = [
     {
       id: '1',
@@ -14,6 +14,6 @@ export const books = [
       category: 'Kategori 2',
       image: 'https://via.placeholder.com/150',
     },
-    // Daha fazla kitap verisi ekleyebilirsiniz
+    
   ];
   

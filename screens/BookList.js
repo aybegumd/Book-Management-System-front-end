@@ -1,31 +1,46 @@
+import React, { useState, useEffect } from 'react';
+import { View, Text, FlatList, ActivityIndicator, StyleSheet } from 'react-native';
+import { fetchBooks } from '../api'; 
 
-import React from 'react';
-import { View, Text, FlatList, TouchableOpacity, StyleSheet, Image } from 'react-native';
+const BookList = () => {
+  const [books, setBooks] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
 
-const books = [
-  { id: '1', title: 'Book Title 1', author: 'Author 1', image: 'https://via.placeholder.com/150' },
-  { id: '2', title: 'Book Title 2', author: 'Author 2', image: 'https://via.placeholder.com/150' },
-  // Diğer kitaplar...
-];
+  useEffect(() => {
+    const loadBooks = async () => {
+      try {
+        const data = await fetchBooks();
+        setBooks(data);
+      } catch (err) {
+        setError("Kitapları yüklerken bir hata oluştu.");
+      } finally {
+        setLoading(false);
+      }
+    };
 
-const BookList = ({ navigation }) => {
-  const renderItem = ({ item }) => (
-    <TouchableOpacity 
-      style={styles.bookCard}
-      onPress={() => navigation.navigate('BookDetail', { bookId: item.id })}
-    >
-      <Image source={{ uri: item.image }} style={styles.bookImage} />
-      <Text style={styles.bookTitle}>{item.title}</Text>
-      <Text style={styles.bookAuthor}>{item.author}</Text>
-    </TouchableOpacity>
-  );
+    loadBooks();
+  }, []);
+
+  if (loading) {
+    return <ActivityIndicator size="large" color="#B68FB2" />;
+  }
+
+  if (error) {
+    return <Text>{error}</Text>;
+  }
 
   return (
     <View style={styles.container}>
       <FlatList
         data={books}
-        renderItem={renderItem}
-        keyExtractor={item => item.id}
+        keyExtractor={(item) => item.id.toString()} 
+        renderItem={({ item }) => (
+          <View style={styles.item}>
+            <Text style={styles.title}>{item.title}</Text>
+            <Text>{item.author}</Text>
+          </View>
+        )}
       />
     </View>
   );
@@ -34,31 +49,23 @@ const BookList = ({ navigation }) => {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    padding: 10,
+    padding: 20,
+    backgroundColor: '#F6F4F2',
   },
-  bookCard: {
-    backgroundColor: '#fff',
-    borderRadius: 8,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
+  item: {
     padding: 10,
     marginBottom: 10,
+    backgroundColor: '#fff',
+    borderRadius: 5,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.3,
+    shadowRadius: 3,
+    elevation: 5,
   },
-  bookImage: {
-    width: '100%',
-    height: 150,
-    borderRadius: 8,
-  },
-  bookTitle: {
+  title: {
     fontSize: 18,
     fontWeight: 'bold',
-    marginTop: 10,
-  },
-  bookAuthor: {
-    fontSize: 14,
-    color: '#555',
   },
 });
 
