@@ -6,6 +6,11 @@ import BookList from './screens/BookList';
 import BookDetail from './screens/BookDetails';
 import SignUp from './screens/SignUp'; 
 import AdminPage from './screens/AdminPage'; 
+import UserProfile from './screens/UserProfile'; 
+import ChangePassword from './screens/ChangePassword'; 
+import AddBook from './screens/AddBook'; 
+
+import './firebase'; 
 
 const Stack = createNativeStackNavigator();
 
@@ -16,27 +21,42 @@ const App = () => {
         <Stack.Screen 
           name="Home" 
           component={HomePage} 
-          options={{ title: 'Home' }}
+          options={{ title: 'Home Page' }} 
         />
         <Stack.Screen 
           name="BookList" 
           component={BookList} 
-          options={{ title: 'Book List' }}
+          options={{ title: 'Library' }} 
         />
         <Stack.Screen 
           name="BookDetail" 
           component={BookDetail} 
-          options={{ title: 'Book Detail' }}
+          options={{ title: 'Book Detail' }} 
         />
         <Stack.Screen 
           name="SignUp" 
           component={SignUp} 
-          options={{ title: 'Üye Ol' }} // Başlık
+          options={{ title: 'Sign Up' }} 
         />
-         <Stack.Screen 
+        <Stack.Screen 
           name="AdminPage" 
           component={AdminPage} 
-          options={{ title: 'Admin Page' }}
+          options={{ title: 'Admin Page' }} 
+        />
+        <Stack.Screen 
+          name="AddBook"  
+          component={AddBook} 
+          options={{ title: 'Add New Book' }} 
+        />
+        <Stack.Screen 
+          name="UserProfile" 
+          component={UserProfile} 
+          options={{ title: 'User Profile' }} 
+        />
+        <Stack.Screen 
+          name="ChangePassword" 
+          component={ChangePassword} 
+          options={{ title: 'Change Password' }} 
         />
       </Stack.Navigator>
     </NavigationContainer>

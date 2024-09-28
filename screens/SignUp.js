@@ -1,7 +1,8 @@
 import React, { useState } from 'react';
-import { View, TextInput, TouchableOpacity, Text, StyleSheet } from 'react-native';
-import { createUserWithEmailAndPassword } from '../firebase'; 
-import { auth } from '../firebase'; 
+import { View, TextInput, TouchableOpacity, Text, StyleSheet, Alert } from 'react-native';
+import { getAuth, createUserWithEmailAndPassword } from 'firebase/auth'; 
+import { db } from '../firebase'; 
+import { doc, setDoc } from 'firebase/firestore'; 
 
 const SignUp = ({ navigation }) => {
   const [email, setEmail] = useState('');
@@ -10,41 +11,76 @@ const SignUp = ({ navigation }) => {
   const [firstName, setFirstName] = useState('');
   const [lastName, setLastName] = useState('');
 
-  const handleSignup = () => {
+  const handleSignup = async () => {
+    
+    let errorMessage = '';
+
+    
     if (password !== confirmPassword) {
-      alert('Şifreler uyuşmuyor.');
+      errorMessage = 'Şifreler uyuşmuyor.';
+    } else if (password.length < 6) {
+      errorMessage = 'Şifre en az 6 karakter olmalıdır.';
+    } else if (!email.includes('@')) {
+      errorMessage = 'Geçerli bir e-posta adresi girin.';
+    }
+
+    
+    if (errorMessage) {
+      Alert.alert('Hata', errorMessage);
       return;
     }
 
-    createUserWithEmailAndPassword(auth, email, password)
-      .then(() => {
-        navigation.navigate('Home');
-      })
-      .catch((error) => {
-        console.error('Kayıt hatası:', error);
-        alert('Kayıt başarısız, lütfen bilgilerinizi kontrol edin.');
+    const auth = getAuth(); 
+    try {
+    
+      const userCredential = await createUserWithEmailAndPassword(auth, email, password);
+      const user = userCredential.user;
+
+    
+      await setDoc(doc(db, 'users', user.uid), {
+        firstName,
+        lastName,
+        email,
+        createdAt: new Date(),
       });
+
+     
+      Alert.alert('Başarılı!', 'Kayıt başarılı, giriş yapabilirsiniz.');
+      setFirstName('');
+      setLastName('');
+      setEmail('');
+      setPassword('');
+      setConfirmPassword('');
+      
+     
+      navigation.navigate('Home'); 
+    } catch (error) {
+      console.error('Kayıt hatası:', error);
+      Alert.alert('Kayıt başarısız', error.message);
+    }
   };
 
   return (
     <View style={styles.container}>
       <TextInput
-        placeholder="İsim"
+        placeholder="Ad"
         value={firstName}
         onChangeText={setFirstName}
         style={styles.input}
       />
       <TextInput
-        placeholder="Soyisim"
+        placeholder="Soyad"
         value={lastName}
         onChangeText={setLastName}
         style={styles.input}
       />
       <TextInput
-        placeholder="Email"
+        placeholder="E-posta"
         value={email}
         onChangeText={setEmail}
         style={styles.input}
+        keyboardType="email-address"
+        autoCapitalize="none"
       />
       <TextInput
         placeholder="Şifre"

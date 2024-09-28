@@ -1,25 +1,37 @@
 import React, { useState } from 'react';
-import { View, TextInput, TouchableOpacity, Text, Image, StyleSheet, Alert } from 'react-native';
+import { View, TextInput, TouchableOpacity, Text, Image, StyleSheet, Alert, SafeAreaView } from 'react-native';
 import { getAuth, signInWithEmailAndPassword } from 'firebase/auth';
+import { doc, getDoc } from 'firebase/firestore';
+import { db } from '../firebase';
 
 const HomePage = ({ navigation }) => {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
 
-  const handleLogin = () => {
+  const handleLogin = async () => {
     const auth = getAuth();
-    
     const lowerCaseEmail = email.toLowerCase();
 
-    signInWithEmailAndPassword(auth, lowerCaseEmail, password)
-      .then(() => {
-        // Başarılı giriş
-        navigation.navigate('BookList');
-      })
-      .catch((error) => {
-        console.error(error);
-        Alert.alert('Giriş Hatası', 'Kullanıcı adı veya şifre hatalı. Lütfen tekrar deneyin.');
-      });
+    try {
+      const userCredential = await signInWithEmailAndPassword(auth, lowerCaseEmail, password);
+      const user = userCredential.user;
+
+      // Firestore
+      const docRef = doc(db, 'users', user.uid);
+      const docSnap = await getDoc(docRef);
+
+      if (docSnap.exists()) {
+        const firstName = docSnap.data().firstName; // Kullanıcı adını al
+
+        // BookList sayfasına yönlendirirken firstName'i ilet
+        navigation.navigate('BookList', { firstName });
+      } else {
+        console.log('No such document!');
+      }
+    } catch (error) {
+      console.error(error);
+      Alert.alert('Giriş Hatası', 'Kullanıcı adı veya şifre hatalı. Lütfen tekrar deneyin.');
+    }
   };
 
   const handleAdminLogin = () => {
@@ -34,47 +46,55 @@ const HomePage = ({ navigation }) => {
   };
 
   return (
-    <View style={styles.container}>
-      <Image 
-        source={require('../assets/bookpic.png')} 
-        style={styles.image} 
-      />
-      <Text style={styles.welcomeText}>Welcome!</Text>
-      <TextInput
-        style={styles.input}
-        placeholder="E-posta"
-        value={email}
-        onChangeText={setEmail}
-        autoCompleteType="email"
-      />
-      <TextInput
-        style={styles.input}
-        placeholder="Şifre"
-        value={password}
-        onChangeText={setPassword}
-        secureTextEntry
-      />
-      <View style={styles.buttonRow}>
-        <TouchableOpacity style={styles.buttonContainer} onPress={handleLogin}>
-          <Text style={styles.buttonText}>User Login</Text>
-        </TouchableOpacity>
-        <TouchableOpacity style={styles.buttonContainer} onPress={handleAdminLogin}>
-          <Text style={styles.buttonText}>Admin Login</Text>
-        </TouchableOpacity>
+    <SafeAreaView style={styles.container}>
+      <View style={styles.innerContainer}>
+        <Image 
+          source={require('../assets/bookpic.png')} 
+          style={styles.image} 
+        />
+        <Text style={styles.welcomeText}>Welcome!</Text>
+        <TextInput
+          style={styles.input}
+          placeholder="E-posta"
+          value={email}
+          onChangeText={setEmail}
+          autoCompleteType="email"
+        />
+        <TextInput
+          style={styles.input}
+          placeholder="Şifre"
+          value={password}
+          onChangeText={setPassword}
+          secureTextEntry
+        />
+        <View style={styles.buttonRow}>
+          <TouchableOpacity style={styles.buttonContainer} onPress={handleLogin}>
+            <Text style={styles.buttonText}>User Login</Text>
+          </TouchableOpacity>
+          <TouchableOpacity style={styles.buttonContainer} onPress={handleAdminLogin}>
+            <Text style={styles.buttonText}>Admin Login</Text>
+          </TouchableOpacity>
+        </View>
+        <View style={styles.signUpContainer}>
+          <Text style={styles.signUpPrompt}>Don't have an account?</Text>
+          <TouchableOpacity onPress={() => navigation.navigate('SignUp')}>
+            <Text style={styles.registerText}>Sign Up</Text>
+          </TouchableOpacity>
+        </View>
       </View>
-      <TouchableOpacity onPress={() => navigation.navigate('SignUp')}>
-        <Text style={styles.registerText}>Sign Up</Text>
-      </TouchableOpacity>
-    </View>
+    </SafeAreaView>
   );
 };
 
 const styles = StyleSheet.create({
   container: {
     flex: 1,
+    backgroundColor: '#F6F4F2',
+  },
+  innerContainer: {
+    flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
-    backgroundColor: '#F6F4F2',
     padding: 20,
   },
   image: {
@@ -120,9 +140,21 @@ const styles = StyleSheet.create({
     fontWeight: 'bold',
     textAlign: 'center',
   },
+  signUpContainer: {
+    flexDirection: 'row',
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginTop: 50,
+  },
+  signUpPrompt: {
+    color: '#B68FB2',
+    fontSize: 16,
+  },
   registerText: {
     color: '#B68FB2',
     fontSize: 16,
+    fontWeight: 'bold',
+    marginLeft: 5,
     textDecorationLine: 'underline',
   },
 });
