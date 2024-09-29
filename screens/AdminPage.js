@@ -1,3 +1,5 @@
+//API Güncelle
+
 import React, { useState, useEffect } from 'react';
 import { View, Text, FlatList, ActivityIndicator, StyleSheet, TouchableOpacity, TextInput, ScrollView, Image } from 'react-native';
 import { fetchBooks } from '../api';
@@ -51,18 +53,18 @@ const AdminPage = ({ navigation }) => {
     const newAvailability = !currentAvailability;
 
     try {
-        await axios.patch(`http://192.168.1.52:8080/api/books/${bookId}/availability`, {
-            available: newAvailability,
-        });
+      await axios.patch(`http://192.168.1.58:8080/api/books/${bookId}/availability`, { //API GÜNCELLE
+        available: newAvailability,
+      });
        
-        const updatedBooks = books.map(book => 
-            book.id === bookId ? { ...book, available: newAvailability } : book
-        );
-        setBooks(updatedBooks);
+      const updatedBooks = books.map(book => 
+        book.id === bookId ? { ...book, available: newAvailability } : book
+      );
+      setBooks(updatedBooks);
     } catch (error) {
-        console.error("Kitap durumunu değiştirirken hata oluştu:", error.message);
+      console.error("Kitap durumunu değiştirirken hata oluştu:", error.message);
     }
-};
+  };
 
   const filteredBooks = books.filter(book => {
     const matchesSearch =
@@ -90,6 +92,16 @@ const AdminPage = ({ navigation }) => {
     }
   };
 
+  const handleSearchChange = (text) => {
+    setSearchTerm(text);
+    setCurrentPage(0); // Sayfayı sıfırla
+  };
+
+  const handleCategoryChange = (category) => {
+    setSelectedCategory(category);
+    setCurrentPage(0); // Sayfayı sıfırla
+  };
+
   if (loading) {
     return <ActivityIndicator size="large" color="#ffb278" />;
   }
@@ -100,82 +112,85 @@ const AdminPage = ({ navigation }) => {
 
   return (
     <View style={styles.container}>
-      <View style={styles.header}>
-        <View style={styles.headerTextContainer}>
-          <Text style={styles.welcomeText}>Welcome, Admin!</Text>
-          <Text style={styles.subText}>Manage the library effectively.</Text>
-        </View>
-        <TouchableOpacity style={styles.addBookButton} onPress={() => navigation.navigate('AddBook')}>
-          <Text style={styles.addBookButtonText}>Add New Book</Text>
-        </TouchableOpacity>
-      </View>
-
-      <View style={styles.searchAndCategoryContainer}>
-        <View style={styles.searchContainer}>
-          <TextInput
-            style={styles.searchInput}
-            placeholder="Search books by title, author, or category..."
-            value={searchTerm}
-            onChangeText={setSearchTerm}
-          />
-          <Image source={searchIcon} style={styles.searchIcon} />
+      <ScrollView contentContainerStyle={styles.scrollContainer}>
+        <View style={styles.header}>
+          <View style={styles.headerTextContainer}>
+            <Text style={styles.welcomeText}>Welcome, Admin!</Text>
+            <Text style={styles.subText}>Manage the library effectively.</Text>
+          </View>
+          <TouchableOpacity style={styles.addBookButton} onPress={() => navigation.navigate('AddBook')}>
+            <Text style={styles.addBookButtonText}>Add New Book</Text>
+          </TouchableOpacity>
         </View>
 
-        <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.categoryContainer}>
-          {categories.map(category => (
-            <TouchableOpacity
-              key={category.name}
-              style={[styles.categoryButton, selectedCategory === category.name && styles.selectedCategoryButton]}
-              onPress={() => setSelectedCategory(category.name)}
-            >
-              <Text style={[styles.categoryButtonText, selectedCategory === category.name && styles.selectedCategoryButtonText]}>
-                {category.name}
-              </Text>
-            </TouchableOpacity>
-          ))}
-        </ScrollView>
-      </View>
+        <View style={styles.searchAndCategoryContainer}>
+          <View style={styles.searchContainer}>
+            <TextInput
+              style={styles.searchInput}
+              placeholder="Search books by title, author, or category..."
+              value={searchTerm}
+              onChangeText={handleSearchChange} // Arama fonksiyonu
+            />
+            <Image source={searchIcon} style={styles.searchIcon} />
+          </View>
 
-      <View style={styles.bookListSection}>
-        <FlatList
-          data={paginatedBooks}
-          numColumns={2}
-          keyExtractor={(item) => item.id.toString()}
-          columnWrapperStyle={styles.row}
-          renderItem={({ item }) => (
-            <View style={styles.item}>
+          <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.categoryContainer}>
+            {categories.map(category => (
               <TouchableOpacity
-                onPress={() => navigation.navigate('BookDetail', { bookId: item.id })}
+                key={category.name}
+                style={[styles.categoryButton, selectedCategory === category.name && styles.selectedCategoryButton]}
+                onPress={() => handleCategoryChange(category.name)} // Kategori fonksiyonu
               >
-                <Image
-                  source={{ uri: item.coverImage }}
-                  style={styles.bookCover}
-                />
-                <Text style={styles.title}>{item.title}</Text>
-                <Text>{item.author}</Text>
-                <Text>{item.category}</Text>
-              </TouchableOpacity>
-              <TouchableOpacity
-                style={[styles.toggleButton, item.available ? styles.available : styles.unavailable]}
-                onPress={() => toggleAvailability(item.id, item.available)}
-              >
-                <Text style={styles.toggleButtonText}>
-                  {item.available ? 'Mark as Unavailable' : 'Mark as Available'}
+                <Text style={[styles.categoryButtonText, selectedCategory === category.name && styles.selectedCategoryButtonText]}>
+                  {category.name}
                 </Text>
               </TouchableOpacity>
-            </View>
-          )}
-        />
-
-        <View style={styles.pagination}>
-          <TouchableOpacity onPress={handlePreviousPage} disabled={currentPage === 0}>
-            <Text style={[styles.pageButton, currentPage === 0 && styles.disabledButton]}>Previous</Text>
-          </TouchableOpacity>
-          <Text style={styles.pageInfo}>{currentPage + 1} / {totalPages}</Text>
-          <TouchableOpacity onPress={handleNextPage} disabled={currentPage >= totalPages - 1}>
-            <Text style={[styles.pageButton, currentPage >= totalPages - 1 && styles.disabledButton]}>Next</Text>
-          </TouchableOpacity>
+            ))}
+          </ScrollView>
         </View>
+
+        <View style={styles.bookListSection}>
+          <FlatList
+            data={paginatedBooks}
+            numColumns={2}
+            keyExtractor={(item) => item.id.toString()}
+            columnWrapperStyle={styles.row}
+            renderItem={({ item }) => (
+              <View style={styles.item}>
+                <TouchableOpacity
+                  onPress={() => navigation.navigate('BookDetail', { bookId: item.id })}
+                  style={styles.bookTouchable}
+                >
+                  <Image
+                    source={{ uri: item.coverImage }}
+                    style={styles.bookCover}
+                  />
+                  <Text style={styles.title}>{item.title}</Text>
+                  <Text>{item.author}</Text>
+                  <Text>{item.category}</Text>
+                </TouchableOpacity>
+                <TouchableOpacity
+                  style={[styles.toggleButton, item.available ? styles.available : styles.unavailable]}
+                  onPress={() => toggleAvailability(item.id, item.available)}
+                >
+                  <Text style={styles.toggleButtonText}>
+                    {item.available ? 'Mark as Unavailable' : 'Mark as Available'}
+                  </Text>
+                </TouchableOpacity>
+              </View>
+            )}
+          />
+        </View>
+      </ScrollView>
+
+      <View style={styles.pagination}>
+        <TouchableOpacity onPress={handlePreviousPage} disabled={currentPage === 0}>
+          <Text style={[styles.pageButton, currentPage === 0 && styles.disabledButton]}>Previous</Text>
+        </TouchableOpacity>
+        <Text style={styles.pageInfo}>{currentPage + 1} / {totalPages}</Text>
+        <TouchableOpacity onPress={handleNextPage} disabled={currentPage >= totalPages - 1}>
+          <Text style={[styles.pageButton, currentPage >= totalPages - 1 && styles.disabledButton]}>Next</Text>
+        </TouchableOpacity>
       </View>
     </View>
   );
@@ -184,9 +199,11 @@ const AdminPage = ({ navigation }) => {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    padding: 20,
+    padding: 10,
     backgroundColor: '#F3F4F6',
-    justifyContent: 'flex-start',
+  },
+  scrollContainer: {
+    paddingBottom: 100,
   },
   header: {
     flexDirection: 'row',
@@ -195,7 +212,7 @@ const styles = StyleSheet.create({
     backgroundColor: '#F3F4F6',
     padding: 10,
     borderBottomWidth: 1,
-    borderBottomColor: '#e99c44', 
+    borderBottomColor: '#e99c44',
     marginBottom: 10,
   },
   headerTextContainer: {
@@ -203,18 +220,18 @@ const styles = StyleSheet.create({
     alignItems: 'flex-start',
   },
   welcomeText: {
-    fontSize: 24,
+    fontSize: 20,
     fontWeight: 'bold',
-    color: '#e99c44', 
+    color: '#e99c44',
   },
   subText: {
-    fontSize: 16,
-    color: '#e99c44', 
+    fontSize: 14,
+    color: '#e99c44',
   },
   addBookButton: {
-    backgroundColor: '#e99c44', 
-    padding: 15,
-    borderRadius: 80,
+    backgroundColor: '#e99c44',
+    padding: 10,
+    borderRadius: 50,
     alignItems: 'center',
   },
   addBookButtonText: {
@@ -222,46 +239,46 @@ const styles = StyleSheet.create({
     fontWeight: 'bold',
   },
   searchAndCategoryContainer: {
-    marginBottom: 20,
+    marginBottom: 10,
   },
   searchContainer: {
     flexDirection: 'row',
     alignItems: 'center',
     marginBottom: 10,
   },
-  searchIcon: {
-    width: 35,
-    height: 35,
-    marginLeft: 10,
-  },
   searchInput: {
     flex: 1,
-    height: 40,
-    borderColor: '#e99c44', 
     borderWidth: 1,
-    borderRadius: 50,
-    paddingHorizontal: 10,
+    borderColor: '#e99c44',
+    borderRadius: 20,
+    padding: 10,
+    backgroundColor: '#FFF',
+    marginRight: 5,
+  },
+  searchIcon: {
+    width: 20,
+    height: 20,
   },
   categoryContainer: {
     flexDirection: 'row',
-    marginBottom: 0.5,
+    marginVertical: 10,
   },
   categoryButton: {
-    backgroundColor: '#F3F4F6',
-    borderColor: '#e99c44', 
-    borderWidth: 1,
-    borderRadius: 10,
-    padding: 10,
-    marginRight: 10,
+    backgroundColor: '#FF8C00', 
+    paddingVertical: 10,
+    paddingHorizontal: 15,
+    borderRadius: 20,
+    marginHorizontal: 5,
   },
   selectedCategoryButton: {
     backgroundColor: '#e99c44', 
   },
   categoryButtonText: {
-    color: '#e99c44', 
+    color: '#FFF', 
+    fontWeight: 'bold', 
   },
   selectedCategoryButtonText: {
-    color: '#FFFFFF',
+    color: '#FFF',
   },
   bookListSection: {
     flex: 1,
@@ -273,22 +290,29 @@ const styles = StyleSheet.create({
     backgroundColor: '#FFF',
     padding: 10,
     margin: 5,
-    borderRadius: 5,
+    borderRadius: 10,
     width: '48%',
+    alignItems: 'center',
+  },
+  bookTouchable: {
+    alignItems: 'center',
   },
   bookCover: {
-    width: '100%',
-    height: 250,
-    borderRadius: 5,
+    width: 90,
+    height: 130,
+    borderRadius: 10,
   },
   title: {
-    fontSize: 16,
     fontWeight: 'bold',
+    marginTop: 5,
+    textAlign: 'center',
+    fontSize: 14,
   },
   toggleButton: {
     marginTop: 10,
-    padding: 10,
-    borderRadius: 5,
+    padding: 5,
+    borderRadius: 20,
+    width: '100%',
     alignItems: 'center',
   },
   available: {
@@ -305,16 +329,24 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    marginTop: 10,
+    padding: 10,
+    backgroundColor: '#FFF',
+    borderTopWidth: 1,
+    borderTopColor: '#e99c44',
+    position: 'absolute',
+    bottom: 0,
+    left: 0,
+    right: 0,
   },
   pageButton: {
-    color: '#e99c44', 
+    color: '#e99c44',
+    fontWeight: 'bold',
   },
   disabledButton: {
-    color: '#C0C0C0',
+    color: '#cccccc',
   },
   pageInfo: {
-    color: '#e99c44', 
+    fontWeight: 'bold',
   },
 });
 

@@ -1,12 +1,15 @@
 import React, { useState, useEffect } from 'react';
 import { View, Text, FlatList, Image, ActivityIndicator, StyleSheet, TouchableOpacity, TextInput, ScrollView } from 'react-native';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import { fetchBooks } from '../api'; 
 import profileImage from '../assets/profile.png'; 
 import searchIcon from '../assets/search.png'; 
+import Icon from 'react-native-vector-icons/FontAwesome'; // İkon kütüphanesi
 
 const BookList = ({ route, navigation }) => {
-  const { firstName } = route.params; // firstName prop'u
+  const { firstName } = route.params;
   const [books, setBooks] = useState([]);
+  const [favoriteBooks, setFavoriteBooks] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [selectedCategory, setSelectedCategory] = useState('All');
@@ -15,7 +18,7 @@ const BookList = ({ route, navigation }) => {
   const booksPerPage = 10;
 
   const categories = [
-    { name: 'All' }, 
+    { name: 'All' },
     { name: 'Fiction' },
     { name: 'Science Fiction' },
     { name: 'Romance' },
@@ -30,7 +33,8 @@ const BookList = ({ route, navigation }) => {
     { name: 'Historical Fiction' },
     { name: 'Philosophical Fiction' },
     { name: 'Southern Gothic' },
-    { name: 'Young Adult' }
+    { name: 'Young Adult' },
+    { name: 'Self-Help' }
   ];
 
   useEffect(() => {
@@ -45,14 +49,39 @@ const BookList = ({ route, navigation }) => {
       }
     };
 
+    const loadFavorites = async () => {
+      try {
+        const favorites = await AsyncStorage.getItem('favoriteBooks');
+        if (favorites) {
+          setFavoriteBooks(JSON.parse(favorites));
+        }
+      } catch (error) {
+        console.error("Favori kitapları yüklerken bir hata oluştu: ", error);
+      }
+    };
+
     loadBooks();
+    loadFavorites();
   }, []);
+
+  const toggleFavorite = async (bookId) => {
+    let updatedFavorites;
+    if (favoriteBooks.includes(bookId)) {
+      // Favorilerden kaldır
+      updatedFavorites = favoriteBooks.filter(id => id !== bookId);
+    } else {
+      // Favorilere ekle
+      updatedFavorites = [...favoriteBooks, bookId];
+    }
+    setFavoriteBooks(updatedFavorites);
+    await AsyncStorage.setItem('favoriteBooks', JSON.stringify(updatedFavorites));
+  };
 
   const filteredBooks = books.filter(book => {
     const matchesSearch = 
       book.title.toLowerCase().includes(searchTerm.toLowerCase()) || 
       book.author.toLowerCase().includes(searchTerm.toLowerCase()) || 
-      book.category.toLowerCase().includes(searchTerm.toLowerCase()); 
+      book.category.toLowerCase().includes(searchTerm.toLowerCase());
 
     const matchesCategory = selectedCategory === 'All' || book.category === selectedCategory;
 
@@ -94,65 +123,92 @@ const BookList = ({ route, navigation }) => {
           <Text style={styles.welcomeText}>Hello, {firstName}!</Text>
           <Text style={styles.subText}>Let's Discover Books...</Text>
         </View>
+        <View style={styles.favoriteHeader}>
+          <Text style={styles.favoriteHeaderText}>Favoriler</Text>
+          <TouchableOpacity onPress={() => navigation.navigate('FavoriteBooks')} style={styles.favoriteIconContainer}>
+            <Icon 
+              name="heart" 
+              size={35} 
+              color="#B68FB2" 
+            />
+          </TouchableOpacity>
+        </View>
       </View>
 
-      <View style={styles.searchAndCategoryContainer}>
-        <View style={styles.searchContainer}>
-          <TextInput
-            style={styles.searchInput}
-            placeholder="Search books by title, author, or category..."
-            value={searchTerm}
-            onChangeText={setSearchTerm} 
+      <ScrollView style={styles.scrollContainer}>
+        <View style={styles.searchAndCategoryContainer}>
+          <View style={styles.searchContainer}>
+            <TextInput
+              style={styles.searchInput}
+              placeholder="Search books by title, author, or category..."
+              value={searchTerm}
+              onChangeText={(text) => {
+                setSearchTerm(text);
+                setCurrentPage(0); // Reset page on search
+              }} 
+            />
+            <Image source={searchIcon} style={styles.searchIcon} />
+          </View>
+
+          <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.categoryContainer}>
+            {categories.map(category => (
+              <TouchableOpacity 
+                key={category.name}
+                style={[styles.categoryButton, selectedCategory === category.name && styles.selectedCategoryButton]} 
+                onPress={() => {
+                  setSelectedCategory(category.name);
+                  setCurrentPage(0); // Reset page on category change
+                }}
+              >
+                <Text style={[styles.categoryButtonText, selectedCategory === category.name && styles.selectedCategoryButtonText]}>
+                  {category.name}
+                </Text>
+              </TouchableOpacity>
+            ))}
+          </ScrollView>
+        </View>
+
+        <View style={styles.bookListSection}>
+          <FlatList
+            data={paginatedBooks}
+            numColumns={2}
+            keyExtractor={(item) => item.id.toString()} 
+            columnWrapperStyle={styles.row} 
+            renderItem={({ item }) => (
+              <TouchableOpacity 
+                style={styles.item} 
+                onPress={() => navigation.navigate('BookDetail', { bookId: item.id })}
+              >
+                <Image 
+                  source={{ uri: item.coverImage }} 
+                  style={styles.bookCover}
+                />
+                <Text style={styles.title}>{item.title}</Text>
+                <Text>{item.author}</Text>
+                <Text>{item.category}</Text>
+                <TouchableOpacity onPress={() => toggleFavorite(item.id)} style={styles.favoriteIconButton}>
+                  <Icon 
+                    name={favoriteBooks.includes(item.id) ? 'heart' : 'heart-o'} 
+                    size={25} 
+                    color={favoriteBooks.includes(item.id) ? '#B68FB2' : '#000'}
+                    style={styles.favoriteIcon} 
+                  />
+                </TouchableOpacity>
+              </TouchableOpacity>
+            )}
+            showsVerticalScrollIndicator={false}
           />
-          <Image source={searchIcon} style={styles.searchIcon} />
         </View>
+      </ScrollView>
 
-        <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.categoryContainer}>
-          {categories.map(category => (
-            <TouchableOpacity 
-              key={category.name}
-              style={[styles.categoryButton, selectedCategory === category.name && styles.selectedCategoryButton]} 
-              onPress={() => setSelectedCategory(category.name)}
-            >
-              <Text style={[styles.categoryButtonText, selectedCategory === category.name && styles.selectedCategoryButtonText]}>
-                {category.name}
-              </Text>
-            </TouchableOpacity>
-          ))}
-        </ScrollView>
-      </View>
-
-      <View style={styles.bookListSection}>
-        <FlatList
-          data={paginatedBooks}
-          numColumns={2}
-          keyExtractor={(item) => item.id.toString()} 
-          columnWrapperStyle={styles.row} 
-          renderItem={({ item }) => (
-            <TouchableOpacity 
-              style={styles.item} 
-              onPress={() => navigation.navigate('BookDetail', { bookId: item.id })}
-            >
-              <Image 
-                source={{ uri: item.coverImage }} 
-                style={styles.bookCover}
-              />
-              <Text style={styles.title}>{item.title}</Text>
-              <Text>{item.author}</Text>
-              <Text>{item.category}</Text>
-            </TouchableOpacity>
-          )}
-        />
-        
-        <View style={styles.pagination}>
-          <TouchableOpacity onPress={handlePreviousPage} disabled={currentPage === 0}>
-            <Text style={[styles.pageButton, currentPage === 0 && styles.disabledButton]}>Previous</Text>
-          </TouchableOpacity>
-          <Text style={styles.pageInfo}>{currentPage + 1} / {totalPages}</Text>
-          <TouchableOpacity onPress={handleNextPage} disabled={currentPage >= totalPages - 1}>
-            <Text style={[styles.pageButton, currentPage >= totalPages - 1 && styles.disabledButton]}>Next</Text>
-          </TouchableOpacity>
-        </View>
+      <View style={styles.pagination}>
+        <TouchableOpacity onPress={handlePreviousPage} disabled={currentPage === 0}>
+          <Text style={[styles.pageButton, currentPage === 0 && styles.disabledButton]}>Previous</Text>
+        </TouchableOpacity>
+        <Text style={styles.pageInfo}>{currentPage + 1} / {totalPages}</Text>
+        <TouchableOpacity onPress={handleNextPage} disabled={currentPage >= totalPages - 1}>
+          <Text style={[styles.pageButton, currentPage >= totalPages - 1 && styles.disabledButton]}>Next</Text>
+        </TouchableOpacity>
       </View>
     </View>
   );
@@ -163,7 +219,6 @@ const styles = StyleSheet.create({
     flex: 1,
     padding: 20,
     backgroundColor: '#F6F4F2',
-    justifyContent: 'flex-start',
   },
   header: {
     flexDirection: 'row',
@@ -179,18 +234,17 @@ const styles = StyleSheet.create({
     width: 50,
     height: 50,
     borderRadius: 25,
-    marginRight: 10,
   },
   headerTextContainer: {
-    alignItems: 'flex-start',
+    marginLeft: 10,
+    flex: 1,
   },
   welcomeText: {
-    fontSize: 24,
+    fontSize: 18,
     fontWeight: 'bold',
     color: '#B68FB2',
   },
   subText: {
-    fontSize: 16,
     color: '#B68FB2',
   },
   searchAndCategoryContainer: {
@@ -252,16 +306,24 @@ const styles = StyleSheet.create({
     width: '100%',
     height: 250,
     borderRadius: 5,
+    alignSelf: 'center',
   },
   title: {
     fontSize: 16,
     fontWeight: 'bold',
   },
+  favoriteIcon: {
+    marginTop: 5,
+    alignSelf: 'flex-end', // Favori ikonunu sağ tarafa yerleştiriyoruz.
+  },
   pagination: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    marginTop: 10,
+    paddingVertical: 10,
+    borderTopWidth: 1,
+    borderTopColor: '#B68FB2',
+    backgroundColor: '#F6F4F2',
   },
   pageButton: {
     color: '#B68FB2',
@@ -272,6 +334,25 @@ const styles = StyleSheet.create({
   pageInfo: {
     color: '#B68FB2',
   },
+  scrollContainer: {
+    flex: 1,
+  },
+  favoriteHeader: {
+    flexDirection: 'column', 
+    alignItems: 'center',    
+    marginLeft: 'auto',      
+  },
+  favoriteIconButton: {
+    alignItems: 'center',   
+  },
+  favoriteHeaderText: {
+    fontSize: 15,
+    fontWeight: 'bold',
+    color: '#B68FB2',
+    marginTop: 5,            
+  },
+  
+  
 });
 
 export default BookList;

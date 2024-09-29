@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { View, TextInput, TouchableOpacity, Text, StyleSheet, Alert } from 'react-native';
+import { View, TextInput, TouchableOpacity, Text, StyleSheet, Alert, Image, ScrollView, KeyboardAvoidingView, Platform } from 'react-native';
 import { getAuth, createUserWithEmailAndPassword } from 'firebase/auth'; 
 import { db } from '../firebase'; 
 import { doc, setDoc } from 'firebase/firestore'; 
@@ -12,31 +12,26 @@ const SignUp = ({ navigation }) => {
   const [lastName, setLastName] = useState('');
 
   const handleSignup = async () => {
-    
     let errorMessage = '';
 
-    
     if (password !== confirmPassword) {
-      errorMessage = 'Şifreler uyuşmuyor.';
+      errorMessage = 'Passwords do not match.';
     } else if (password.length < 6) {
-      errorMessage = 'Şifre en az 6 karakter olmalıdır.';
+      errorMessage = 'Password must be at least 6 characters long.';
     } else if (!email.includes('@')) {
-      errorMessage = 'Geçerli bir e-posta adresi girin.';
+      errorMessage = 'Please enter a valid email address.';
     }
 
-    
     if (errorMessage) {
-      Alert.alert('Hata', errorMessage);
+      Alert.alert('Error', errorMessage);
       return;
     }
 
     const auth = getAuth(); 
     try {
-    
       const userCredential = await createUserWithEmailAndPassword(auth, email, password);
       const user = userCredential.user;
 
-    
       await setDoc(doc(db, 'users', user.uid), {
         firstName,
         lastName,
@@ -44,88 +39,193 @@ const SignUp = ({ navigation }) => {
         createdAt: new Date(),
       });
 
-     
-      Alert.alert('Başarılı!', 'Kayıt başarılı, giriş yapabilirsiniz.');
+      Alert.alert('Success!', 'Registration successful, you can now log in.');
       setFirstName('');
       setLastName('');
       setEmail('');
       setPassword('');
       setConfirmPassword('');
       
-     
       navigation.navigate('Home'); 
     } catch (error) {
-      console.error('Kayıt hatası:', error);
-      Alert.alert('Kayıt başarısız', error.message);
+      console.error('Registration error:', error);
+      Alert.alert('Registration failed', error.message);
     }
   };
 
   return (
-    <View style={styles.container}>
-      <TextInput
-        placeholder="Ad"
-        value={firstName}
-        onChangeText={setFirstName}
-        style={styles.input}
+    <KeyboardAvoidingView 
+      style={styles.container} 
+      behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+    >
+      {/* Üst Kısım: Resim */}
+      <Image 
+        source={require('../assets/signup.png')} 
+        style={styles.image} 
       />
-      <TextInput
-        placeholder="Soyad"
-        value={lastName}
-        onChangeText={setLastName}
-        style={styles.input}
-      />
-      <TextInput
-        placeholder="E-posta"
-        value={email}
-        onChangeText={setEmail}
-        style={styles.input}
-        keyboardType="email-address"
-        autoCapitalize="none"
-      />
-      <TextInput
-        placeholder="Şifre"
-        value={password}
-        onChangeText={setPassword}
-        secureTextEntry
-        style={styles.input}
-      />
-      <TextInput
-        placeholder="Şifreyi Onayla"
-        value={confirmPassword}
-        onChangeText={setConfirmPassword}
-        secureTextEntry
-        style={styles.input}
-      />
-      <TouchableOpacity onPress={handleSignup} style={styles.button}>
-        <Text style={styles.buttonText}>Üye Ol</Text>
-      </TouchableOpacity>
-    </View>
+      
+      {/* Scrollable Form */}
+      <ScrollView contentContainerStyle={styles.scrollViewContent} keyboardShouldPersistTaps="handled">
+        <View style={styles.formContainer}>
+          
+          {/* Sign Up Başlığı */}
+          <Text style={styles.title}>Sign Up</Text>
+
+          {/* First Name */}
+          <View style={styles.inputContainer}>
+            <Text style={styles.label}>First Name</Text>
+            <TextInput
+              value={firstName}
+              onChangeText={setFirstName}
+              style={styles.input}
+              placeholder="Enter your first name"
+              placeholderTextColor="#B0B0B0"
+            />
+          </View>
+
+          {/* Last Name */}
+          <View style={styles.inputContainer}>
+            <Text style={styles.label}>Last Name</Text>
+            <TextInput
+              value={lastName}
+              onChangeText={setLastName}
+              style={styles.input}
+              placeholder="Enter your last name"
+              placeholderTextColor="#B0B0B0"
+            />
+          </View>
+
+          {/* Email */}
+          <View style={styles.inputContainer}>
+            <Text style={styles.label}>Email</Text>
+            <TextInput
+              value={email}
+              onChangeText={setEmail}
+              style={styles.input}
+              placeholder="Enter your email"
+              placeholderTextColor="#B0B0B0"
+              keyboardType="email-address"
+              autoCapitalize="none"
+            />
+          </View>
+
+          {/* Password */}
+          <View style={styles.inputContainer}>
+            <Text style={styles.label}>Password</Text>
+            <TextInput
+              value={password}
+              onChangeText={setPassword}
+              secureTextEntry
+              style={styles.input}
+              placeholder="Enter your password"
+              placeholderTextColor="#B0B0B0"
+            />
+          </View>
+
+          {/* Confirm Password */}
+          <View style={styles.inputContainer}>
+            <Text style={styles.label}>Confirm Password</Text>
+            <TextInput
+              value={confirmPassword}
+              onChangeText={setConfirmPassword}
+              secureTextEntry
+              style={styles.input}
+              placeholder="Confirm your password"
+              placeholderTextColor="#B0B0B0"
+            />
+          </View>
+
+          {/* Sign Up Button */}
+          <TouchableOpacity onPress={handleSignup} style={styles.button}>
+            <Text style={styles.buttonText}>Sign Up</Text>
+          </TouchableOpacity>
+
+          {/* Zaten bir hesabınız var mı? */}
+          <View style={styles.loginContainer}>
+            <Text style={styles.loginText}>Already have an account?</Text>
+            <TouchableOpacity onPress={() => navigation.navigate('Home')} style={styles.loginButton}>
+              <Text style={styles.loginButtonText}>Log In</Text>
+            </TouchableOpacity>
+          </View>
+        </View>
+      </ScrollView>
+    </KeyboardAvoidingView>
   );
 };
 
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    justifyContent: 'center',
-    padding: 20,
     backgroundColor: '#F6F4F2',
   },
+  image: {
+    width: '100%',
+    height: '50%', // Üst kısım için tam alan
+    resizeMode: 'cover',
+    position: 'absolute',
+    top: 0,
+  },
+  scrollViewContent: {
+    flexGrow: 1, 
+    justifyContent: 'flex-end', // Formun resim altına yerleştirilmesini sağlıyor
+  },
+  formContainer: {
+    backgroundColor: '#ffffff',
+    borderTopLeftRadius: 40,
+    borderTopRightRadius: 40,
+    elevation: 5,
+    padding: 20,
+    marginTop: '60%', // Resmin altında olacak şekilde yerleştiriyoruz
+  },
+  title: {
+    fontSize: 24,  // Büyük ve belirgin bir yazı
+    fontWeight: 'bold',
+    color: '#333', // Koyu renk
+    textAlign: 'center',
+    marginBottom: 20, // Altında boşluk bırakmak için
+  },
+  inputContainer: {
+    marginBottom: 15,
+  },
+  label: {
+    fontSize: 12,
+    color: '#B0B0B0', // Hafif gri bir renk
+    marginBottom: 5,
+  },
   input: {
-    height: 50,
+    height: 40,
     borderColor: '#ccc',
     borderWidth: 1,
-    borderRadius: 5,
-    marginBottom: 15,
+    borderRadius: 25,
     paddingHorizontal: 10,
+    backgroundColor: '#f8f8f8',
   },
   button: {
     backgroundColor: '#B68FB2',
     paddingVertical: 15,
-    borderRadius: 5,
+    borderRadius: 50,
+    alignSelf: 'center', 
+    width: '50%', // Buton genişliği
   },
   buttonText: {
     color: '#fff',
     textAlign: 'center',
+    fontWeight: 'bold',
+  },
+  loginContainer: {
+    flexDirection: 'row',
+    justifyContent: 'center', 
+    marginTop: 40,
+    alignItems: 'center',
+  },
+  loginText: {
+    fontSize: 14,
+  },
+  loginButton: {
+    marginLeft: 10,
+  },
+  loginButtonText: {
+    color: '#B68FB2',
     fontWeight: 'bold',
   },
 });

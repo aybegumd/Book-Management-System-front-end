@@ -108,10 +108,10 @@ const styles = StyleSheet.create({
         resizeMode: 'cover',
     },
     infoContainer: {
-        backgroundColor: '#FFFFFF', // Arka plan rengi
+        backgroundColor: '#FFFFFF', 
         borderRadius: 10,
         padding: 20,
-        elevation: 5, // Gölge efekti
+        elevation: 5, 
     },
     title: {
         fontSize: 28,

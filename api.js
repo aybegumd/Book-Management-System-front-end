@@ -1,6 +1,7 @@
 import axios from 'axios';
 
-const API_URL = 'http://192.168.1.52:8080/api';
+const API_URL = 'http://192.168.1.58:8080/api';  //API GÜNCELLE
+
 
 // Kitapları getiren fonksiyon
 export const fetchBooks = async () => {
@@ -34,4 +35,19 @@ export const addBook = async (book) => {
     throw error;
   }
 };
+
+
+export const fetchCategories = async () => {
+  try {
+    const response = await fetch('http://192.168.1.58:8080/api/categories'); //API GÜNCELLE
+    if (!response.ok) {
+      throw new Error('Network response was not ok');
+    }
+    return await response.json(); 
+  } catch (error) {
+    console.error('Failed to fetch categories:', error);
+    throw error;
+  }
+};
+
 
